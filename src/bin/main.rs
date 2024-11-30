@@ -3,7 +3,8 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Collect command-line arguments
     let args: Vec<String> = env::args().collect();
 
@@ -27,10 +28,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if input_path.is_file() {
         println!("Processing single file: {}", input_path.display());
         let output_path = output_dir.join(input_path.file_name().unwrap());
-        process_image_file(&input_path, &output_path, &config)?;
+        process_image_file(&input_path, &output_path, &config).await?;
     } else if input_path.is_dir() {
         println!("Processing directory: {}", input_path.display());
-        process_directory(&input_path, &output_dir, &config)?;
+        process_directory(&input_path, &output_dir, &config).await?;
     } else {
         eprintln!("Error: Provided path is neither a file nor a directory.");
         return Ok(());

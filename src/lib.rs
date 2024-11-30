@@ -1,8 +1,8 @@
 use image::{DynamicImage, GenericImageView, GrayImage, Luma};
-use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Configuration for image processing final sizes
+#[derive(Clone)]
 pub struct ImageProcessorConfig {
     pub width: u32,
     pub height: u32,
@@ -43,7 +43,7 @@ pub fn preprocess_image(
 /// Final image sizes can be configured via `ImageProcessorConfig`.
 /// For processing a directory use `process_directory`.
 /// For processing a `DynamicImage` from the `image` crate, use directly `preprocess_image`.
-pub fn process_image_file(
+pub async fn process_image_file(
     input_path: &Path,
     output_path: &Path,
     config: &ImageProcessorConfig,
@@ -58,17 +58,19 @@ pub fn process_image_file(
 /// Final image sizes can be configured via `ImageProcessorConfig`.
 /// For processing a single file use `process_image_file`.
 /// For processing a `DynamicImage` from the `image` crate, use directly `preprocess_image`.
-pub fn process_directory(
+pub async fn process_directory(
     input_dir: &PathBuf,
     output_dir: &PathBuf,
     config: &ImageProcessorConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if !output_dir.exists() {
-        fs::create_dir_all(output_dir)?;
+        tokio::fs::create_dir_all(output_dir).await?;
     }
 
-    for entry in fs::read_dir(input_dir)? {
-        let entry = entry?;
+    let mut entries = tokio::fs::read_dir(input_dir).await?;
+    let mut tasks = vec![];
+
+    while let Some(entry) = entries.next_entry().await? {
         let path = entry.path();
 
         if let Some(ext) = path.extension() {
@@ -78,9 +80,21 @@ pub fn process_directory(
                 .map_or(false, |ext| matches!(ext.as_str(), "png" | "jpg" | "jpeg"))
             {
                 let output_file = output_dir.join(path.file_name().unwrap());
-                process_image_file(&path, &output_file, config)?;
+                let cloned_config = config.clone();
+
+                // Spawn a task for each image processing operation
+                tasks.push(tokio::task::spawn(async move {
+                    if let Err(e) = process_image_file(&path, &output_file, &cloned_config).await {
+                        eprintln!("Error processing file {:?}: {:?}", path, e);
+                    }
+                }));
             }
         }
+    }
+
+    // Wait for all tasks to complete
+    for task in tasks {
+        task.await?;
     }
 
     Ok(())
