@@ -179,6 +179,7 @@ fn crop_white_borders(img: &GrayImage) -> GrayImage {
     let mut top = height;
     let mut bottom = 0;
 
+    // Iterate through every pixel to find the non-white areas
     for y in 0..height {
         for x in 0..width {
             let Luma([l]) = img.get_pixel(x, y);
@@ -200,8 +201,22 @@ fn crop_white_borders(img: &GrayImage) -> GrayImage {
         }
     }
 
-    img.view(left, top, right - left + 1, bottom - top + 1)
-        .to_image()
+    // Check if we have found any non-white pixels
+    if left >= right || top >= bottom {
+        // If no valid coordinates were found, return the original image
+        return img.clone();
+    }
+
+    // Calculate width and height with checks to avoid overflow or negative values
+    let crop_width = right.checked_sub(left).unwrap_or(0) + 1;
+    let crop_height = bottom.checked_sub(top).unwrap_or(0) + 1;
+
+    // Ensure the dimensions are valid
+    if crop_width == 0 || crop_height == 0 {
+        return img.clone(); // Return original image if no valid crop dimensions
+    }
+
+    img.view(left, top, crop_width, crop_height).to_image()
 }
 
 /// Fits the image into a canvas of the specified dimensions, without changing the aspect ratio

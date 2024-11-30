@@ -1,6 +1,6 @@
 [package]
 name = "math_images_processor"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Taylor Hoffmann <taylor@hotay.dev>"]
 description = "A Rust library for preprocessing images of mathematical formulas, ideally for machine learning applications for formula recognition."
