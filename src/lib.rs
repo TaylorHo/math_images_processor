@@ -43,7 +43,7 @@ pub fn preprocess_image(
 /// Final image sizes can be configured via `ImageProcessorConfig`.
 /// For processing a directory use `process_directory`.
 /// For processing a `DynamicImage` from the `image` crate, use directly `preprocess_image`.
-pub async fn process_image_file(
+pub fn process_image_file(
     input_path: &Path,
     output_path: &Path,
     config: &ImageProcessorConfig,
@@ -55,6 +55,8 @@ pub async fn process_image_file(
 }
 
 /// Processes all PNG, JPG, and JPEG files in a directory and saves the processed images in a separate directory.
+/// NOTE 1: This uses asynchronous processing, so use with tokio macros in the main function.
+/// NOTE 2: Asynchronous processing is almost 7x faster than synchronous processing. For synchronous processing use `process_directory_without_async`.
 /// Final image sizes can be configured via `ImageProcessorConfig`.
 /// For processing a single file use `process_image_file`.
 /// For processing a `DynamicImage` from the `image` crate, use directly `preprocess_image`.
@@ -84,7 +86,7 @@ pub async fn process_directory(
 
                 // Spawn a task for each image processing operation
                 tasks.push(tokio::task::spawn(async move {
-                    if let Err(e) = process_image_file(&path, &output_file, &cloned_config).await {
+                    if let Err(e) = process_image_file(&path, &output_file, &cloned_config) {
                         eprintln!("Error processing file {:?}: {:?}", path, e);
                     }
                 }));
@@ -95,6 +97,34 @@ pub async fn process_directory(
     // Wait for all tasks to complete
     for task in tasks {
         task.await?;
+    }
+
+    Ok(())
+}
+
+pub fn process_directory_without_async(
+    input_dir: &PathBuf,
+    output_dir: &PathBuf,
+    config: &ImageProcessorConfig,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if !output_dir.exists() {
+        std::fs::create_dir_all(output_dir)?;
+    }
+
+    for entry in std::fs::read_dir(input_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if let Some(ext) = path.extension() {
+            if ext
+                .to_str()
+                .map(|s| s.to_lowercase())
+                .map_or(false, |ext| matches!(ext.as_str(), "png" | "jpg" | "jpeg"))
+            {
+                let output_file = output_dir.join(path.file_name().unwrap());
+                process_image_file(&path, &output_file, config)?;
+            }
+        }
     }
 
     Ok(())

@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if input_path.is_file() {
         println!("Processing single file: {}", input_path.display());
         let output_path = output_dir.join(input_path.file_name().unwrap());
-        process_image_file(&input_path, &output_path, &config).await?;
+        process_image_file(&input_path, &output_path, &config)?;
     } else if input_path.is_dir() {
         println!("Processing directory: {}", input_path.display());
         process_directory(&input_path, &output_dir, &config).await?;
