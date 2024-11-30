@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let input_path = PathBuf::from(&args[1]);
-    let output_dir = env::current_dir()?.join("processed_formulas");
+    let output_dir = env::current_dir()?.join("processed-formulas");
 
     // Ensure the output directory exists
     if !output_dir.exists() {

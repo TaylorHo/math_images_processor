@@ -44,7 +44,7 @@ It's a quick way to have images ready for training.
    cargo run -- <path_to_directory>
    ```
 
-   Processed images will be saved in the `processed_formulas` folder.
+   Processed images will be saved in the `processed-formulas` folder.
 
 ## Contributing
 
