@@ -17,6 +17,20 @@ This crate can quickly standardize images and make them visually better for Neur
 
 It's a quick way to have images ready for training.
 
+## Asynchronous
+
+This crate uses tokio to process directories of images in an asynchronous way. **This is 6x to 7x times faster than the synchronous way** (tested with 36 images).
+So, use it with the async macro from tokio in your main function, like below:
+
+```rust
+#[tokio::main] // Add this line
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+   /// ...
+}
+```
+
+If you don't want to use async processing and don't want to configure tokio, you can process directories of images using the "no async" method (instead of `process_directory` use `process_directory_without_async`). If you want to process a single image file or `DynamicImage`, use `process_image_file` or `preprocess_image` (respectively, these methods are sync, so there's no need to use tokio).
+
 ## Usage
 
 1. **Add the crate to your project**:
